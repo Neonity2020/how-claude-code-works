@@ -195,6 +195,22 @@ Claude Code 支持三种多 Agent 模式：
 **关注安全？**
 → 读 [权限与安全](./docs/11-permission-security.md) + [代码编辑策略](./docs/05-code-editing-strategy.md)
 
+## 🧭 路线图 / TODO
+
+本仓库的分析基于约 **v2.1.6x（2026 年 3 月底）** 的源码快照。此后 Claude Code 又发布了 ~130 个版本，出现了一批快照里没有的重要新能力。这些内容**没有源码可走读**，我们计划换一种方法继续分析——**黑盒实测 + 开源情报**（官方 changelog、官方文档、公开博客）：安装最新版真实使用，观察行为、边界与失败模式，再对照官方资料交叉验证，推理出"它大概是怎么做的"（推理与实锤会明确区分）。
+
+计划新增的专题：
+
+- [ ] **可观测性：Metrics 与 Trace**（[#10](https://github.com/Windy3f3f3f3f/how-claude-code-works/issues/10) 提议）—— Claude Code 自身如何打点：OpenTelemetry 指标/事件导出、成本核算、会话 transcript 作为 turn 级 trace。这部分快照里有源码，仍可源码走读
+- [ ] **自治闭环：`/goal`、`/loop` 与 cron 调度**（v2.1.71 / v2.1.139）—— 设定完成条件后跨 turn 自主工作直到达成；定时/模型自定节奏的循环任务
+- [ ] **Dynamic Workflows（触发词 "ultracode"）**（v2.1.154–160）—— 用一段编排脚本在后台指挥几十到几百个 agent，带 token 预算控制、断点续跑与 `/workflows` 监控面板
+- [ ] **Auto Mode：权限进入分类器时代**（v2.1.152 起免 opt-in）—— 从"规则 + 确认框"到 ML 分类器实时判断每个动作放行/拦截，并能理解口头边界（如"别 push"）
+- [ ] **后台 Agent 舰队**（v2.1.139–198）—— `/bg` 后台化、常驻 daemon、`claude agents` 全局面板、会话睡醒机制、完工自动 commit+push+draft PR、子 agent 默认后台运行
+- [ ] **云端多 Agent 审查**（v2.1.111–147）—— `/ultrareview` → `/code-review`：并行多 agent 分析 + 对抗式批判，带档位（low→ultra）与 CI 集成
+- [ ] **Agent Teams 与跨会话安全**（v2.1.166–178）—— `SendMessage` 组队协作；"跨会话消息不携带用户权威"的防提示注入设计
+
+> 欢迎在 [issues](https://github.com/Windy3f3f3f3f/how-claude-code-works/issues) 里投票或补充你最想看的主题。
+
 ## 🤝 贡献者
 
 | <img src="https://github.com/Windy3f3f3f3f.png" width="60" /> | <img src="https://github.com/davidweidawang.png" width="60" /> | <img src="./assets/kaibo.jpg" width="60" /> | <img src="https://github.com/longx24.png" width="60" /> |
