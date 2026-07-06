@@ -87,7 +87,7 @@ function buildTool<D extends AnyToolDef>(def: D): BuiltTool<D> {
 
 - **`isConcurrencySafe: () => false`**：新工具默认不可并发执行。只有经过验证确实安全的工具（如纯读取操作）才显式 opt-in 为 `true`。这避免了新增工具因遗漏并发安全标记而导致竞态条件。
 - **`isReadOnly: () => false`**：默认假设工具有写入副作用，因此必须经过权限检查。只读工具（如 GrepTool、GlobTool）显式声明自己为只读以跳过权限弹窗。
-- **`toAutoClassifierInput: () => ''`**：默认跳过 ML 分类器的自动审批。这意味着安全相关的工具不会被意外自动批准——必须由工具作者显式提供分类器输入格式。
+- **`toAutoClassifierInput: () => ''`**：默认跳过 LLM 分类器的自动审批。这意味着安全相关的工具不会被意外自动批准——必须由工具作者显式提供分类器输入格式。
 
 这种设计确保了：任何新工具在缺少显式配置的情况下，都会走最保守的路径——需要权限、不可并发、不自动批准。
 

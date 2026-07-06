@@ -959,14 +959,14 @@ PermissionRequest Hook 远不止简单的 allow/deny：
 
 ### 与权限系统的竞速
 
-PermissionRequest Hook 参与[权限系统的竞速机制](./11-permission-security.md)——与 UI 确认对话框和 ML 分类器同时运行，先完成的获胜。
+PermissionRequest Hook 参与[权限系统的竞速机制](./11-permission-security.md)——与 UI 确认对话框和 LLM 分类器同时运行，先完成的获胜。
 
 ```mermaid
 sequenceDiagram
     participant Tool as 工具调用
     participant Hook as PermissionRequest Hook
     participant UI as UI 确认对话框
-    participant ML as ML 分类器
+    participant ML as LLM 分类器
     participant Guard as ResolveOnce 守卫
 
     Tool->>Hook: 输入参数

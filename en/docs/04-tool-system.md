@@ -87,7 +87,7 @@ This is a classic **fail-closed** (default-closed) security design:
 
 - **`isConcurrencySafe: () => false`**: New tools default to non-concurrent execution. Only tools that have been verified as truly safe (such as pure read operations) explicitly opt-in to `true`. This avoids race conditions caused by new tools missing the concurrency safety flag.
 - **`isReadOnly: () => false`**: Defaults to assuming the tool has write side effects, so it must go through permission checks. Read-only tools (such as GrepTool, GlobTool) explicitly declare themselves as read-only to skip the permission popup.
-- **`toAutoClassifierInput: () => ''`**: Defaults to skipping the ML classifier's auto-approval. This means security-related tools won't be accidentally auto-approved—the tool author must explicitly provide the classifier input format.
+- **`toAutoClassifierInput: () => ''`**: Defaults to skipping the LLM classifier's auto-approval. This means security-related tools won't be accidentally auto-approved—the tool author must explicitly provide the classifier input format.
 
 This design ensures that: any new tool lacking explicit configuration will take the most conservative path—requiring permissions, disallowing concurrency, and no auto-approval.
 

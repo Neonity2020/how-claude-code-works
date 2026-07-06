@@ -98,15 +98,17 @@ One of the most elegant designs in the entire system. When context approaches it
 
 Each level may free enough space that subsequent levels don't need to run. After compression, the system **automatically restores the 5 most recently edited files**, preventing the model from forgetting what it was just working on.
 
-### How do you prevent AI from executing dangerous operations? — 5 layers of defense
+### How do you prevent AI from executing dangerous operations? — 7 layers of defense
 
-Claude Code runs commands directly on your machine — security has to be rock-solid. It doesn't rely on a single "are you sure?" dialog. Instead, it builds 5 layers of defense:
+Claude Code runs commands directly on your machine — security has to be rock-solid. It doesn't rely on a single "are you sure?" dialog. Instead, it builds 7 layers of defense:
 
-1. **Permission modes** — Different trust levels restricting what operations can run
-2. **Rule matching** — Pattern-based allowlists and denylists
-3. **Deep Bash analysis** — The most hardcore layer: uses syntax tree analysis (not regex) to dissect the true intent of shell commands, with 23 security checks covering command injection, environment variable leaks, special character attacks, and more
-4. **User confirmation** — Dangerous operations trigger a confirmation dialog with 200ms debounce protection against accidental key presses
-5. **Hook validation** — Users can define custom security rules that even modify tool inputs on the fly (e.g., automatically adding `--dry-run` to `rm` commands)
+1. **Workspace trust** — On first entering a directory, it asks you to trust it; if you don't, all of that project's custom Hooks are disabled, blocking scripts pre-planted by malicious repos
+2. **Permission modes** — Different trust levels restricting what operations can run
+3. **Rule matching** — Pattern-based allow/deny/ask lists
+4. **Deep Bash analysis** — The most hardcore layer: uses syntax tree analysis (not regex) to dissect the true intent of shell commands, with 23 static security checks covering command injection, environment variable leaks, special character attacks, and more
+5. **Tool-level security** — Each tool carries its own input validation and dedicated safety logic (e.g., the file-edit tool blocks dangerous paths)
+6. **Sandbox & isolation** — Process-level sandbox (macOS Seatbelt / Linux namespaces) plus Git Worktree file isolation
+7. **User confirmation** — Dangerous operations trigger a confirmation dialog, racing against Hooks and the LLM classifier; a 200ms debounce guards against accidental key presses, and once the user acts, human intent always wins
 
 If any single layer blocks the action, it doesn't execute. Defense in depth.
 
@@ -148,7 +150,7 @@ To prevent conflicts from multiple agents editing the same files, the system use
 | 9 | [Plan Mode](./en/docs/10-plan-mode.md) | Two entry paths, 5-phase workflow, attachment throttling, Phase 4 A/B experiments, plan file management, approval and permission restoration |
 | 10 | [Code Editing Strategy](./en/docs/05-code-editing-strategy.md) | Why "search-and-replace" over "full file rewrite," how to ensure edit safety |
 | 11 | [Task Management System](./en/docs/15-task-system.md) | File-level storage with concurrency locking, 3-layer change detection, dependency tracking and atomic claiming, multi-agent task coordination, verification nudge |
-| 12 | [Permission & Security](./en/docs/11-permission-security.md) | The complete 5-layer security system, 23 Bash security checks |
+| 12 | [Permission & Security](./en/docs/11-permission-security.md) | The complete 7-layer security system, 23 Bash security checks |
 | 13 | [System Prompt Design](./en/docs/14-system-prompt-design.md) | 7-layer progressive prompt architecture, anti-pattern inoculation, blast radius risk framework, 7 agent prompt design principles |
 | 14 | [User Experience](./en/docs/12-user-experience.md) | Why React for terminal UI, streaming output implementation, terminal interaction details |
 | 15 | [Minimal Components](./en/docs/13-minimal-components.md) | The minimum modules needed for a coding agent, the evolution path from 500 lines to 500K |
@@ -172,7 +174,7 @@ To prevent conflicts from multiple agents editing the same files, the system use
 | TypeScript files | 1,884 |
 | Built-in tools | ~55 (tools.ts registry, incl. feature-gated) |
 | Compression levels | 4 |
-| Security layers | 5 |
+| Security layers | 7 |
 
 ## Reading Recommendations
 
@@ -200,7 +202,7 @@ Planned topics:
 - [x] **Observability: Metrics & Trace** (proposed in [#10](https://github.com/Windy3f3f3f3f/how-claude-code-works/issues/10)) — how Claude Code instruments itself: OpenTelemetry metrics/events export, cost accounting, session transcripts as turn-level traces. **Done → [Chapter 16: Observability](./en/docs/16-observability.md)**
 - [x] **The autonomy loop: `/goal`, `/loop` and cron scheduling** (v2.1.71 / v2.1.139) — set a completion condition and Claude keeps working across turns until it's met; recurring tasks on fixed or model-chosen intervals. **Done → [Chapter 17: Autonomy & Continuation](./en/docs/17-autonomy-goal-loop.md)** (includes the full prompt text of the `/goal` evaluator and the `/loop` command + a reproducible RE method)
 - [ ] **Dynamic Workflows (trigger word "ultracode")** (v2.1.154–160) — an orchestration script that directs tens to hundreds of agents in the background, with token budgets, resumable runs and the `/workflows` panel
-- [ ] **Auto Mode: permissions enter the classifier era** (opt-in dropped in v2.1.152) — from "rules + confirmation dialogs" to an ML classifier deciding allow/deny per action, honoring spoken boundaries like "don't push"
+- [ ] **Auto Mode: permissions enter the classifier era** (opt-in dropped in v2.1.152) — from "rules + confirmation dialogs" to an LLM classifier deciding allow/deny per action, honoring spoken boundaries like "don't push"
 - [ ] **The background agent fleet** (v2.1.139–198) — `/bg`, a resident daemon, the global `claude agents` view, retire→wake lifecycle, auto commit+push+draft-PR on completion, subagents running in the background by default
 - [ ] **Cloud multi-agent review** (v2.1.111–147) — `/ultrareview` → `/code-review`: parallel multi-agent analysis with adversarial critique, effort levels (low→ultra) and CI integration
 - [ ] **Agent Teams & cross-session security** (v2.1.166–178) — team collaboration via `SendMessage`; the anti-prompt-injection design where cross-session messages carry no user authority

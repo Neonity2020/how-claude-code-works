@@ -160,7 +160,7 @@ Edit validation goes through a **14-step validation pipeline**: file existence, 
 
 ## Permissions and Security
 
-An AI Agent that can execute arbitrary Shell commands and read/write arbitrary files, without strict security controls, is a ticking time bomb. Claude Code employs a **defense in depth** strategy, with 7 protection layers progressively stacked, each using different techniques (regex, AST parsing, ML classification, human judgment), ensuring that a single point of failure won't breach the entire defense:
+An AI Agent that can execute arbitrary Shell commands and read/write arbitrary files, without strict security controls, is a ticking time bomb. Claude Code employs a **defense in depth** strategy, with 7 protection layers progressively stacked, each using different techniques (regex, AST parsing, LLM classification, human judgment), ensuring that a single point of failure won't breach the entire defense:
 
 ```
 Trust Dialog → Permission Mode → Rule Matching → Bash AST Analysis → Tool-level Validation → Sandbox Isolation → User Confirmation
@@ -172,7 +172,7 @@ The most complex part of the entire system — uses tree-sitter to perform AST-l
 
 ### Permission Decision Racing
 
-Permission confirmation uses a **racing mechanism**: UI dialog, Hook, and ML classifier run simultaneously, and the first to complete determines the outcome. For clearly safe operations (classifier makes a quick determination), the user doesn't need to wait; for operations requiring human judgment, the UI dialog pops up. User interaction always takes priority over automatic results. There is a 200ms anti-misclick grace period.
+Permission confirmation uses a **racing mechanism**: UI dialog, Hook, and LLM classifier run simultaneously, and the first to complete determines the outcome. For clearly safe operations (classifier makes a quick determination), the user doesn't need to wait; for operations requiring human judgment, the UI dialog pops up. User interaction always takes priority over automatic results. There is a 200ms anti-misclick grace period.
 
 ### Permission Rule System
 

@@ -14,7 +14,7 @@ graph TD
     L3 --> L4[Layer 4: Bash Multi-layer Security<br/>AST parsing + 23 static checks]
     L4 --> L5[Layer 5: Tool-level Security<br/>validateInput/checkPermissions<br/>Dangerous file protection]
     L5 --> L6[Layer 6: Sandbox & Isolation<br/>Sandbox process isolation<br/>Git Worktree file isolation]
-    L6 --> L7[Layer 7: User Confirmation<br/>Interactive dialog<br/>ML classifier racing<br/>Hook override]
+    L6 --> L7[Layer 7: User Confirmation<br/>Interactive dialog<br/>LLM classifier racing<br/>Hook override]
     L7 --> Exec[Execute Tool]
 ```
 
@@ -30,7 +30,7 @@ graph TD
 
 **Layer 6 — Sandbox and Isolation**: This layer provides two isolation mechanisms. **Sandbox** restricts Bash commands' filesystem, network, and process permissions through OS-level process isolation (Seatbelt on macOS, namespaces on Linux). **Git Worktree** provides file-level isolation — sub-Agents work in independent worktrees and are automatically cleaned up after completion if there are no substantive modifications, preventing sub-Agents' experimental operations from polluting the main working directory. See [12.9 Sandbox Design](#129-sandbox-design) for details.
 
-**Layer 7 — User Confirmation**: When all preceding automated layers cannot make a decision, a human makes the final call. The interactive dialog simultaneously launches Hook checks and ML classifiers, with all three racing — but once the user personally interacts with the dialog, automated results are discarded entirely, **human intent always takes priority**. See [12.5 Three Permission Handlers](#125-three-permission-handlers) for details.
+**Layer 7 — User Confirmation**: When all preceding automated layers cannot make a decision, a human makes the final call. The interactive dialog simultaneously launches Hook checks and LLM classifiers, with all three racing — but once the user personally interacts with the dialog, automated results are discarded entirely, **human intent always takes priority**. See [12.5 Three Permission Handlers](#125-three-permission-handlers) for details.
 
 > Why not replace the 7 layers with a single unified permission check? Because the core assumption of defense in depth is "every layer can potentially be bypassed." If there were only tool-level checks, a clever command injection could bypass all security mechanisms. In the 7-layer architecture, even if AST semantic analysis is bypassed, path constraints and user confirmation can still intercept the threat.
 
@@ -47,7 +47,7 @@ Claude Code defines 5 external permission modes and 2 internal modes:
 | `plan` | Pause for review before execution | Sensitive operation auditing |
 | `bypassPermissions` | Auto-approve everything | Full trust (dangerous) |
 | `dontAsk` | Auto-deny when no rules match | CI/CD environments |
-| `auto` (internal) | ML classifier makes automatic decisions | Internal use |
+| `auto` (internal) | LLM classifier makes automatic decisions | Internal use |
 | `bubble` (internal) | Surfaces permission prompts to the parent terminal | (Implicitly forked) sub-Agent |
 
 Below is a detailed explanation of each mode's behavior and design motivation:
@@ -88,7 +88,7 @@ The opposite of bypassPermissions: converts all decisions that would "ask the us
 
 ### Internal Modes
 
-**`auto` Mode**: Uses an ML classifier (transcript classifier) to automatically make permission decisions without user interaction. The classifier analyzes the current conversation context and tool call intent to determine whether an operation is safe. This is a feature-gated internal capability (`TRANSCRIPT_CLASSIFIER`). When the classifier cannot determine or cumulative denials exceed a threshold, it falls back to interactive mode.
+**`auto` Mode**: Uses an LLM classifier (transcript classifier) to automatically make permission decisions without user interaction. The classifier analyzes the current conversation context and tool call intent to determine whether an operation is safe. This is a feature-gated internal capability (`TRANSCRIPT_CLASSIFIER`). When the classifier cannot determine or cumulative denials exceed a threshold, it falls back to interactive mode.
 
 **`bubble` Mode**: Used by (implicitly forked) sub-Agents. When a sub-Agent hits a permission prompt it cannot auto-decide, it "bubbles" the prompt up to the parent terminal / parent Agent to be displayed and handled there (in the source, `FORK_AGENT`'s `permissionMode: 'bubble'` is commented "surfaces permission prompts to the parent terminal").
 
@@ -269,7 +269,7 @@ This is the most elegant design — user confirmation and automated checks **pro
 sequenceDiagram
     participant UI as UI Confirmation Dialog
     participant Hook as PermissionRequest Hook
-    participant Cls as ML Classifier
+    participant Cls as LLM Classifier
     participant Guard as createResolveOnce Guard
 
     Note over UI, Cls: Started simultaneously
@@ -334,7 +334,7 @@ async function handlePermission(request: PermissionRequest) {
 }
 ```
 
-Design rationale: The 200ms grace period protects the racing classifier's result, not to block mistaken approval — it prevents accidental keypresses right after the dialog appears from being counted as "user has interacted" and thereby prematurely canceling the racing ML classifier's auto-approval (the grace period only gates interactions that would set `userInteracted`; it does not gate the actual approval action `onAllow`). Once the user interacts with the dialog after the grace period (any keypress or click), the `userInteracted` flag is set, and subsequent automated results from Hooks and classifiers are discarded — **human intent always takes priority**.
+Design rationale: The 200ms grace period protects the racing classifier's result, not to block mistaken approval — it prevents accidental keypresses right after the dialog appears from being counted as "user has interacted" and thereby prematurely canceling the racing LLM classifier's auto-approval (the grace period only gates interactions that would set `userInteracted`; it does not gate the actual approval action `onAllow`). Once the user interacts with the dialog after the grace period (any keypress or click), the `userInteracted` flag is set, and subsequent automated results from Hooks and classifiers are discarded — **human intent always takes priority**.
 
 ### Permission Explainer
 
@@ -363,7 +363,7 @@ This design gives users sufficient contextual information when making decisions,
 CoordinatorHandler is used for Worker Agents in coordinator (Coordinator) mode. Unlike InteractiveHandler's parallel racing, it employs a **sequential execution** strategy:
 
 1. **Execute Hooks first** — If the PermissionRequest Hook returns a definitive decision (allow/deny), use it directly
-2. **Then execute the classifier** — When the Hook is undecided, run the ML classifier to attempt automatic judgment
+2. **Then execute the classifier** — When the Hook is undecided, run the LLM classifier to attempt automatic judgment
 3. **Finally show the dialog** — Only if the first two cannot decide does it present an interactive confirmation to the user
 
 This sequential design avoids the chaotic scenario of multiple Workers simultaneously popping up dialogs.
@@ -372,7 +372,7 @@ This sequential design avoids the chaotic scenario of multiple Workers simultane
 
 SwarmWorkerHandler is used in sub-Agent (Swarm Worker) scenarios. Its permission handling is the most conservative:
 
-- **Tries the classifier first, forwards to the leader when undecided**: The sub-Agent does not make the final decision locally — for Bash commands it first awaits the ML classifier's attempt to auto-approve, and if that is undecided it forwards a *new* permission request to the leader (coordinator) via mailbox (`createPermissionRequest` + `sendPermissionRequestViaMailbox`) and waits for the leader's decision, rather than reusing permissions already approved by the parent Agent
+- **Tries the classifier first, forwards to the leader when undecided**: The sub-Agent does not make the final decision locally — for Bash commands it first awaits the LLM classifier's attempt to auto-approve, and if that is undecided it forwards a *new* permission request to the leader (coordinator) via mailbox (`createPermissionRequest` + `sendPermissionRequestViaMailbox`) and waits for the leader's decision, rather than reusing permissions already approved by the parent Agent
 - **Restricted tool set**: Sub-Agents can only use the subset of tools explicitly authorized by the parent Agent
 - **No direct user interaction**: The sub-Agent itself does not pop up a confirmation dialog, but the request is adjudicated by the leader — the leader can approve (`onAllow`) or reject (`onReject`); it is not the case that any unauthorized operation is simply denied outright. Only on the exceptional path where forwarding fails does it fall back to local UI handling
 
@@ -398,7 +398,7 @@ flowchart TD
     Sandbox -->|No| Exact[Exact match permission rules]
     Exact -->|deny| Deny[Deny]
     Exact -->|allow| Allow
-    Exact -->|no match| Classifier[ML classifier check<br/>Haiku model]
+    Exact -->|no match| Classifier[LLM classifier check<br/>Haiku model]
     Classifier --> Operator[Command operator check<br/>Pipes/redirections/compound commands]
     Operator --> Safety[Static safety validators<br/>23 checks]
     Safety --> Path[Path constraint validation]
@@ -630,7 +630,7 @@ type DecisionSource =
   | 'user_abort'       // User pressed Escape to abort
   | 'user_reject'      // User explicitly rejected
   | 'hook'             // PermissionRequest Hook decision
-  | 'classifier'       // ML classifier auto-approved
+  | 'classifier'       // LLM classifier auto-approved
   | 'config'           // Config allowlist auto-approved
 ```
 
@@ -642,7 +642,7 @@ Each tool call has a unique `toolUseID`, and decision records are stored in the 
 // Telemetry events
 'tengu_tool_use_granted_in_prompt_permanent'   // User approved and saved
 'tengu_tool_use_granted_in_prompt_temporary'   // User one-time approval
-'tengu_tool_use_granted_by_classifier'         // ML classifier approved
+'tengu_tool_use_granted_by_classifier'         // LLM classifier approved
 'tengu_tool_use_granted_in_config'             // Config rule approved
 'tengu_tool_use_granted_by_permission_hook'    // Permission Hook approved
 'tengu_tool_use_rejected_in_prompt'            // Rejected in prompt

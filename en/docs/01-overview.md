@@ -28,7 +28,7 @@ Every architectural decision in Claude Code revolves around these four requireme
 
 There is no shortage of other programming Agents on the market (such as AutoGPT, OpenDevin, Aider, etc.), but Claude Code has a unique advantage: it is developed by the same team that builds the Claude model. This means **system prompts, tool descriptions, and error handling strategies are co-designed and tuned with the model's behavioral characteristics**. For example, Claude Code's system prompt is not a generic "you are a programming assistant" -- it contains detailed behavioral instructions optimized for Claude model characteristics, and the `description` fields of tools are also iteratively tuned to match the model's understanding patterns.
 
-Furthermore, Claude Code far surpasses most open-source Agent projects in production-grade engineering quality: a 5-layer defense-in-depth security system, 4-level progressive context compression, 7 error recovery strategies, streaming tool pre-execution -- these are not academic demos, but industrial-grade implementations serving real users.
+Furthermore, Claude Code far surpasses most open-source Agent projects in production-grade engineering quality: a 7-layer defense-in-depth security system, 4-level progressive context compression, 7 error recovery strategies, streaming tool pre-execution -- these are not academic demos, but industrial-grade implementations serving real users.
 
 ### Architectural Implications of "Agent-first"
 
@@ -95,7 +95,7 @@ The entire data flow forms a nested generator pipeline with two entry points: th
 
 ### 2. Defense-in-Depth Security
 
-The permission system adopts multi-layered defense:
+Taking the Bash command — the largest attack surface — as an example, the permission system's core decision path is a multi-stage pipeline:
 
 ```
 Permission Rule Matching (src/utils/permissions/)
@@ -108,6 +108,8 @@ LLM Classifier (yoloClassifier)
     | pass
 User Confirmation Dialog
 ```
+
+> The diagram above is the Bash command's core decision path (a representative slice). The full permission system has **7 layers** — beyond the stages above, it also includes workspace trust confirmation, permission modes, and sandboxing/isolation — see the [full model in Chapter 12](/en/docs/11-permission-security.md).
 
 **Why so many layers?** Understanding the threat model is key: Claude Code executes arbitrary code on the user's real machine. The model is not perfect -- it may generate incorrect commands due to context confusion, may be misled by prompt injection in a malicious README, or may simply make a logic error. A single `rm -rf ~` is enough to cause irreversible damage.
 
