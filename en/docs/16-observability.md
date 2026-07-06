@@ -204,7 +204,7 @@ Perfetto local tracing is the same — Ant-only, compile-time gated. It can expo
 
 Two more are worth just a mention: the pipeline to Anthropic's BigQuery (covered in 16.2, gated by the org opt-out, external users don't touch it); and an FPS tracker that folds terminal render frame rate into self-observation — a TUI recording even how smoothly it draws itself, a nice touch of UX engineering (renderer detail in [Chapter 14](12-user-experience.md)). As for beta detailed tracing, it can write the system prompt and model output into spans too, but a strict visibility matrix governs it: the model's raw reasoning is Ant-only, unreachable by external users even at full detail; the full system prompt appears only on this path, and only once per unique hash, to avoid re-reporting large text.
 
-> The instruments CC turns on to observe and defend against reverse engineers (fake-tool injection, steganographic fingerprints, and the like) are a separate topic. This project takes a clean-room reading and won't go into them.
+> The instruments CC turns on to observe and defend against reverse engineers (fake-tool injection, steganographic fingerprints, and the like) are a separate topic this book won't go into.
 
 ---
 
